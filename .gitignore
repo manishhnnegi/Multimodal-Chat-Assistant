@@ -11,3 +11,6 @@ __pycache__/
 
 # Virtual environment
 venv/
+
+docs\1_Demo_recording_Eval_dataset.mp4
+docs\2_Demo_recording_multi_turn_feature.mp4

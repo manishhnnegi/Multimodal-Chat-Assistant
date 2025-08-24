@@ -88,7 +88,7 @@ Multimodal-Chat-Assistant/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/multimodal-chat-assistant.git
+git clone https://github.com/manishhnnegi/Multimodal-Chat-Assistant.git
 cd multimodal-chat-assistant
 ```
 
