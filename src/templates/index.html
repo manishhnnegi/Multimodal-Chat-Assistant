@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Multimodal Chat Assistant</title>
+    <style>
+        /* Reset some defaults */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        header {
+            background: #4A90E2;
+            color: white;
+            padding: 15px 30px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        main {
+            padding: 20px 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 20px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .box {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #4A90E2;
+        }
+
+        button {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #357ABD;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #liveFeed {
+            max-height: 320px;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .keyframes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .keyframes img {
+            width: 100px;
+            border-radius: 6px;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 220px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        #chatBox {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .user-msg {
+            color: #1E90FF;
+            margin: 5px 0;
+        }
+
+        .assistant-msg {
+            color: #28a745;
+            margin: 5px 0;
+        }
+
+        #chatInput {
+            width: calc(100% - 100px);
+            padding: 8px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        #sendChatBtn {
+            margin-top: 10px;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>🎥 Multimodal Chat Assistant</header>
+
+    <main>
+        <div class="box full-width">
+            <button id="startBtn">Start Summarization</button>
+            <button id="stopBtn">Stop Summarization</button>
+        </div>
+
+        <div class="box">
+            <h3>Live Webcam Feed</h3>
+            <img id="liveFeed"
+                src="https://www.shutterstock.com/image-vector/support-icon-can-be-used-600nw-1887496465.jpg"
+                alt="Live Feed">
+
+        </div>
+
+        <div class="box">
+            <h3>Extracted Keyframes (Last Window)</h3>
+            <div id="keyframes" class="keyframes"></div>
+        </div>
+
+
+        <div class="box full-width">
+            <h3>Video Feed Summary</h3>
+            <p id="summary"></p>
+        </div>
+
+
+        <div class="box full-width">
+            <h3>Multi-Turn Chat</h3>
+            <div id="chatBox"></div>
+            <input type="text" id="chatInput" placeholder="Ask about the video...">
+            <button id="sendChatBtn">Send</button>
+        </div>
+
+        <div class="box">
+            <h3>Event Log</h3>
+            <pre id="event_log"></pre>
+        </div>
+
+        <div class="box">
+            <h3>Last Frame Captions</h3>
+            <p id="captions"></p>
+        </div>
+
+    </main>
+
+    <script>
+        let updateInterval = null;
+
+        document.getElementById("startBtn").addEventListener("click", async () => {
+            await fetch('/start');
+            document.getElementById("liveFeed").src = "/video_feed";
+            if (!updateInterval) {
+                updateInterval = setInterval(updateData, 5000);
+            }
+        });
+
+        document.getElementById("stopBtn").addEventListener("click", async () => {
+            await fetch('/stop');
+            document.getElementById("liveFeed").src = "";
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+        });
+
+        async function updateData() {
+            const response = await fetch('/process');
+            const data = await response.json();
+
+            const keyframesDiv = document.getElementById("keyframes");
+            keyframesDiv.innerHTML = "";
+            data.keyframes.forEach(f => {
+                const img = document.createElement("img");
+                img.src = "data:image/jpeg;base64," + f;
+                keyframesDiv.appendChild(img);
+            });
+
+            document.getElementById("captions").innerText = data.captions;
+            document.getElementById("event_log").innerText = data.event_log;
+            document.getElementById("summary").innerText = data.summary;
+        }
+
+        document.getElementById("sendChatBtn").addEventListener("click", async () => {
+            const userMsg = document.getElementById("chatInput").value;
+            if (!userMsg.trim()) return;
+
+            const chatBox = document.getElementById("chatBox");
+            const userElem = document.createElement("div");
+            userElem.className = "user-msg";
+            userElem.innerText = "You: " + userMsg;
+            chatBox.appendChild(userElem);
+
+            document.getElementById("chatInput").value = "";
+
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userMsg })
+            });
+            const data = await response.json();
+
+            const assistantElem = document.createElement("div");
+            assistantElem.className = "assistant-msg";
+            assistantElem.innerText = "Assistant: " + data.response;
+            chatBox.appendChild(assistantElem);
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
+</body>
+
+</html>
