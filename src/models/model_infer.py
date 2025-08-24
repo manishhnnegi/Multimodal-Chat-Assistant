@@ -251,6 +251,10 @@ class ModelInference:
         if not self.camera or not self.capture_active:
             return [], "No frames", "\n".join(self.event_log[-50:]), "No events yet"
 
+        # Ensure camera is opened
+        if not self.camera.isOpened():
+            self.camera.open(0, cv2.CAP_DSHOW)
+
         frames, interval = [], 1.0 / target_fps
         last_capture_time = start_time = time.time()
 
